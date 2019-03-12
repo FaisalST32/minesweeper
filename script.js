@@ -1,19 +1,31 @@
 
 var gridSize = 20;
-var difficulty = difficulty = Number(prompt('Choose Your Difficulty'));
-var mineCount = 0;
+var difficulty;
 var tilesLeft = 0;
-var totalMinesToBePlaced = difficulty * gridSize*gridSize/10;
+var totalMinesToBePlaced;
 var uncoveredTiles = [];
 var firstUncover = true;
-generateGrid();
+var mineCount = 0;
+
+function onChooseDifficulty(_el){
+    difficulty = +_el.id.split('-')[1];
+    totalMinesToBePlaced = difficulty * gridSize*gridSize/10;
+    hideDifficultyModal();
+    generateGrid();
+    startTimer();
+}
+
+function hideDifficultyModal(){
+    var modalEl = document.querySelector('#choose-difficulty-modal');
+    modalEl.style.visibility = 'hidden';
+}
+
 
 function onNewGame(){
-    
+    window.location.reload();
 }
 
 function generateGrid() {
-    
     for (var i = 0; i < gridSize; i++) {
         var rowDiv = document.createElement('div');
         rowDiv.id = 'row-' + i;
@@ -37,6 +49,8 @@ function generateGrid() {
     }
 
     document.querySelector('#mines-counter>span').textContent = totalMinesToBePlaced;
+    setEventListenersForTiles();
+
 }
 
 function onFirstUncover(){
@@ -105,18 +119,19 @@ function populateCounters() {
     }
 }
 
-document.querySelectorAll('div.row>.tile>.tile-shown').forEach((el, index) => {
-    el.addEventListener('click', () => {
-        onUncoverTile(el);
-    });
-});
 
-
-document.querySelectorAll('div.row>.tile>.tile-shown').forEach((el, index) => {
-    el.addEventListener('contextmenu', (event) => {
-        onFlagTile(event, el);
+function setEventListenersForTiles() {
+    document.querySelectorAll('div.row>.tile>.tile-shown').forEach((el, index) => {
+        el.addEventListener('click', () => {
+            onUncoverTile(el);
+        });
     });
-});
+    document.querySelectorAll('div.row>.tile>.tile-shown').forEach((el, index) => {
+        el.addEventListener('contextmenu', (event) => {
+            onFlagTile(event, el);
+        });
+    });
+}
 
 function onUncoverTile(el) {
     //Make sure first click uncovers some area
@@ -162,11 +177,10 @@ function onUncoverTile(el) {
     }
 
     if (el.previousSibling.classList.contains('mine')) {
-        alert('You Lost!!');
-        //Todo: Add Dialog Box
+        onGameLost();
     }
     if (tilesLeft == 0) {
-        alert('You win!!')
+        onGameWon();
     }
 }
 
@@ -217,16 +231,47 @@ function uncoverTile(el) {
 }
 
 //Display Timer 
-(function(){
+function startTimer(){
     var basetime = Math.floor(new Date().getTime()/1000);
-    setInterval(updateTimer, 1000);
+    timerFn = setInterval(updateTimer, 1000);
     function updateTimer(){
         var minutes = Math.floor((Math.floor(new Date().getTime()/1000) - basetime)/60);
         var seconds = (Math.floor(new Date().getTime()/1000) - basetime)%60;
         document.querySelector('.timer>.minutes').textContent = minutes < 10 ? '0' + minutes : minutes;
         document.querySelector('.timer>.seconds').textContent = seconds < 10 ? '0' + seconds : seconds;
     }
-})();
+};
+
+function onGameLost(){
+    uncoverMinedTiles();
+    showGameResultModal('You Lost!');
+    stopTimer();
+}
+
+function showGameResultModal(resultText){
+    var gameResultModalEl = document.querySelector('#game-result-modal');
+    gameResultModalEl.querySelector('#game-result-text').innerHTML = resultText;
+    gameResultModalEl.style.visibility = 'visible';
+}
+
+function uncoverMinedTiles(){
+    document.querySelectorAll('div.row>.tile>.tile-hidden.mine').forEach((el, index) => {
+        var minedTile = el.nextSibling;
+        uncoverTile(minedTile);
+    });
+    stopTimer();
+}
+
+function onGameWon(){
+    showGameResultModal('You Won!');
+    stopTimer();
+}
+
+function stopTimer(){
+    clearInterval(timerFn);
+}
+
+
 
 
 
